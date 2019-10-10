@@ -9,14 +9,12 @@ import { UserDetails } from './UserDetails';
   providedIn: 'root'
 })
 export class LoginService {
-  private baseUrlLogin = 'http://172.24.138.77:8000/user';
+  private baseUrlLogin = 'http://192.168.43.220:8000/user';
 
   constructor(private http: HttpClient) { }
   createUser(user: UserDetails): Observable<any> {
-    console.log(user.userid);
-    return this.http.post('${this.baseUrlLogin}/login', user);
-  }
-  getUserDetails(): Observable<any>{
-    return this.http.get('${this.baseUrlLogin}/login');
+    console.log(user.userID);
+    console.log(user.pass);
+    return this.http.post('http://192.168.43.167:8000/user/login/', {"userID":user.userID, "pass":user.pass});
   }
 }

@@ -1,4 +1,7 @@
-export class UserFullDetails{
-    userID:string;
-    password:string;
+export class UserFullDetails {
+    userID: string;
+    name: string;
+    country: string;
+    gender: string;
+    walletamount: number;
 }
