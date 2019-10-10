@@ -8,8 +8,8 @@ import { DatePipe } from '@angular/common'
   providedIn: 'root'
 })
 export class DashboardService {1
-  configUrl = 'http://192.168.43.167:8000/user/getdata/?userID=aaditya.pandilwar@gmail.com';
-  walletAmountUrl = 'http://192.168.43.167:8000/user/rewards/?userID=aaditya.pandilwar@gmail.com';
+  configUrl = 'http://104.211.223.146:8000/user/getdata/?userID=aaditya.pandilwar@gmail.com';
+  walletAmountUrl = 'http://104.211.223.146:8000/user/rewards/?userID=aaditya.pandilwar@gmail.com';
   
   toDate = new Date();
   fromDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);

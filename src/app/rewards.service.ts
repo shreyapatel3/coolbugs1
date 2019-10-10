@@ -14,14 +14,14 @@ export class RewardsService {
   }
   
   getRewards():Observable<any>{
-    return this.http.get('http://192.168.43.167:8000/user/rewards/?userID=nishant.patel@gmail.com');
+    return this.http.get('http://104.211.223.146:8000/user/rewards/?userID=nishant.patel@gmail.com');
     
     
   }
   setRewards(user:Object){
     console.log("service called");
     this.setUser();
-    return this.http.post('http://192.168.43.167:8000/user/encash',{'userID':'nishant.patel@gmail.com'}).subscribe((response:any)=>{
+    return this.http.post('http://104.211.223.146:8000/user/encash',{'userID':'nishant.patel@gmail.com'}).subscribe((response:any)=>{
       console.log(response);
      // this.assignRewards();
   });
