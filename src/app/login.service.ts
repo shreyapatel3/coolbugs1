@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 //import { Login } from './login'
 import { UserDetails } from './UserDetails';
 
@@ -9,14 +9,13 @@ import { UserDetails } from './UserDetails';
   providedIn: 'root'
 })
 export class LoginService {
-  private baseUrlLogin = 'http://172.24.138.77:8000/user';
+  private baseUrlLogin = 'http://192.168.43.167:8000/user';
+  userDetails: UserDetails[] = [
+    { userID: 'nishant.patel@gmail.com',  name: 'Nishant patel', gender: 'M', country: 'India', pass:'password', walletamount: 5000},
+  ];
 
   constructor(private http: HttpClient) { }
   createUser(user: UserDetails): Observable<any> {
-    console.log(user.userid);
-    return this.http.post('${this.baseUrlLogin}/login', user);
-  }
-  getUserDetails(): Observable<any>{
-    return this.http.get('${this.baseUrlLogin}/login');
+    return of(this.userDetails);
   }
 }

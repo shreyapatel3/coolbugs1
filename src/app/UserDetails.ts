@@ -1,8 +1,8 @@
 export class UserDetails {
-    userid: string;
+    userID: string;
     name: string;
     country: string;
     gender: string;
-    password: string;
+    pass: string;
     walletamount: number;
 }
