@@ -1,209 +1,255 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import Chart from 'chart.js';
+import { DashboardService } from './dashboard.service';
+import { Observable, timer } from 'rxjs';
+import { DashboardTransaction } from './dashboard-transaction';
+import { getDefaultService } from 'selenium-webdriver/chrome';
+import { getLocaleDayNames } from '@angular/common';
+import { throws } from 'assert';
 
 
 @Component({
-    selector: 'dashboard-cmp',
-    moduleId: module.id,
-    templateUrl: 'dashboard.component.html'
+  selector: 'dashboard-cmp',
+  moduleId: module.id,
+  templateUrl: 'dashboard.component.html'
 })
 
-export class DashboardComponent implements OnInit{
+export class DashboardComponent implements OnInit, OnDestroy {
 
-  public canvas : any;
+  public canvas: any;
   public ctx;
   public chartColor;
-  public chartEmail;
-  public chartHours;
+  public consumptionStat;
+  public userBehavior;
+  public timerSubscription;
+  public transactions: DashboardTransaction[];
+  public walletBalance;
 
-    ngOnInit(){
-      this.chartColor = "#FFFFFF";
+  constructor(private dashboardService: DashboardService) {
+  }
 
-      this.canvas = document.getElementById("chartHours");
-      this.ctx = this.canvas.getContext("2d");
+  ngOnInit() {
+    this.chartColor = "#FFFFFF";
+    this.refreshData();
+  }
 
-      this.chartHours = new Chart(this.ctx, {
-        type: 'line',
+  ngOnDestroy() {
+    if (this.timerSubscription) {
+      this.timerSubscription.unsubscribe();
+    }
+  }
 
-        data: {
-          labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"],
-          datasets: [{
-              borderColor: "#6bd098",
-              backgroundColor: "#6bd098",
-              pointRadius: 0,
-              pointHoverRadius: 0,
-              borderWidth: 3,
-              data: [300, 310, 316, 322, 330, 326, 333, 345, 338, 354]
-            },
-            {
-              borderColor: "#f17e5d",
-              backgroundColor: "#f17e5d",
-              pointRadius: 0,
-              pointHoverRadius: 0,
-              borderWidth: 3,
-              data: [320, 340, 365, 360, 370, 385, 390, 384, 408, 420]
-            },
-            {
-              borderColor: "#fcc468",
-              backgroundColor: "#fcc468",
-              pointRadius: 0,
-              pointHoverRadius: 0,
-              borderWidth: 3,
-              data: [370, 394, 415, 409, 425, 445, 460, 450, 478, 484]
-            }
-          ]
+  private refreshData(): void {
+    this.dashboardService.getWalletAmount().subscribe(obj => {
+      if(obj[0] ) {
+      this.walletBalance = obj[0].walletamount;
+      }
+    })
+    this.dashboardService.getUserTransactions().subscribe(transactions => {
+      console.log("tran" + transactions);
+      this.transactions = transactions;
+      this.initialiseUserBehaviour();
+      this.initialiseConsumptionStat();
+      this.subscribeToData();
+    });
+    //this.dashboardService.nextTransaction();
+  }
+
+  private subscribeToData(): void {
+    this.timerSubscription = timer(500000).subscribe(() => this.refreshData());
+  }
+
+  private getDays(): any {
+    const todayDate = new Date();
+    const dates: string[] = [];
+    for (let i = 1; i < todayDate.getDate(); i++) {
+      if (i < 10) {
+        dates.push('0' + i + '/' + (todayDate.getMonth() + 1 )+ '/' + todayDate.getFullYear());
+      } else {
+        dates.push(i + '/' + (todayDate.getMonth() + 1 )+ '/' + todayDate.getFullYear());
+      }
+    }
+    return dates;
+  }
+
+  private getDisplayDays(): any {
+    const todayDate = new Date();
+    const dates: string[] = [];
+    for (let i = 1; i < todayDate.getDate(); i++) {
+      if (i < 10) {
+        dates.push('0' + i );
+      } else {
+        dates.push(i + "");
+      }
+    }
+    return dates;
+  }
+
+
+  private getDateWiseDataset(productType: string): any {
+    const dates: string[] = this.getDays();
+    const productTypeTransactions = this.transactions.filter(transaction => transaction.product.toLowerCase() === productType.toLowerCase());
+    const data : number[] = new Array<number>(dates.length);
+    for(let i = 0; i < dates.length; i++) {
+      data[i] = productTypeTransactions.filter(transaction => 
+        transaction.date.substr(8,2) +'/' + transaction.date.substr(5,2) + '/' + transaction.date.substr(0,4) === dates[i]).reduce((sum, item) => sum + item.delta, 0);
+    }
+    return data;
+  }
+
+  private getDataViaType(): any {
+    return [
+      this.transactions.filter(transaction => transaction.product.toLowerCase() === 'Petrol'.toLowerCase()).reduce((sum, item) => sum + item.delta, 0),
+      this.transactions.filter(transaction => transaction.product.toLowerCase() === 'LPG'.toLowerCase()).reduce((sum, item) => sum + item.delta, 0),
+      this.transactions.filter(transaction => transaction.product.toLowerCase() === 'Agriculture'.toLowerCase()).reduce((sum, item) => sum + item.delta, 0),
+      this.transactions.filter(transaction => transaction.product.toLowerCase() === 'Solar'.toLowerCase()).reduce((sum, item) => sum + item.delta, 0),
+      this.transactions.filter(transaction => transaction.product.toLowerCase() === 'Diesel'.toLowerCase()).reduce((sum, item) => sum + item.delta, 0),
+      this.transactions.filter(transaction => transaction.product.toLowerCase() === 'Paperbag'.toLowerCase()).reduce((sum, item) => sum + item.delta, 0),
+      this.transactions.filter(transaction => transaction.product.toLowerCase() === 'CNG'.toLowerCase()).reduce((sum, item) => sum + item.delta, 0)
+    ];
+  }
+
+  initialiseUserBehaviour() {
+    this.canvas = document.getElementById("userBehavior");
+    this.ctx = this.canvas.getContext("2d");
+
+    let dataContent = {
+      labels: this.getDisplayDays(),
+      datasets: [{
+        label: 'Petrol',
+        backgroundColor: "#E3E3E3",
+        data: this.getDateWiseDataset('Petrol')
+      },
+      {
+        label: 'LPG',
+        backgroundColor: "#51cbce",
+        data: this.getDateWiseDataset('LPG')
+      },
+      {
+        label: 'Agriculture',
+        backgroundColor: "#ef8157",
+        data: this.getDateWiseDataset('Agriculture')
+      },
+      {
+        label: 'Solar',
+        backgroundColor: "#6bd098",
+        data: this.getDateWiseDataset('Solar')
+      },
+      {
+        label: 'Diesel',
+        backgroundColor: "#032914",
+        data: this.getDateWiseDataset('Diesel')
+      },
+      {
+        label: 'Paperbag',
+        backgroundColor: "#8282e9",
+        data: this.getDateWiseDataset('Paperbag')
+      },
+      {
+        label: 'CNG',
+        backgroundColor: "#a9c5b6",
+        data: this.getDateWiseDataset('CNG')
+      }     
+      ]
+    }
+
+    this.userBehavior = new Chart(this.ctx, {
+      type: 'bar',
+
+      data: dataContent,
+      options: {
+        title: {
+          display: false,
+          text: 'Chart.js Bar Chart - Stacked'
         },
-        options: {
-          legend: {
-            display: false
-          },
-
-          tooltips: {
-            enabled: false
-          },
-
-          scales: {
-            yAxes: [{
-
-              ticks: {
-                fontColor: "#9f9f9f",
-                beginAtZero: false,
-                maxTicksLimit: 5,
-                //padding: 20
-              },
-              gridLines: {
-                drawBorder: false,
-                zeroLineColor: "#ccc",
-                color: 'rgba(255,255,255,0.05)'
-              }
-
-            }],
-
-            xAxes: [{
-              barPercentage: 1.6,
-              gridLines: {
-                drawBorder: false,
-                color: 'rgba(255,255,255,0.1)',
-                zeroLineColor: "transparent",
-                display: false,
-              },
-              ticks: {
-                padding: 20,
-                fontColor: "#9f9f9f"
-              }
-            }]
-          },
+        tooltips: {
+          mode: 'index',
+          intersect: false
+        },
+        responsive: true,
+        scales: {
+          xAxes: [{
+            stacked: true,
+          }],
+          yAxes: [{
+            stacked: true
+          }]
         }
-      });
+      }
+    });
 
+  }
 
-      this.canvas = document.getElementById("chartEmail");
-      this.ctx = this.canvas.getContext("2d");
-      this.chartEmail = new Chart(this.ctx, {
-        type: 'pie',
-        data: {
-          labels: [1, 2, 3],
-          datasets: [{
-            label: "Emails",
-            pointRadius: 0,
-            pointHoverRadius: 0,
-            backgroundColor: [
-              '#e3e3e3',
-              '#4acccd',
-              '#fcc468',
-              '#ef8157'
-            ],
-            borderWidth: 0,
-            data: [342, 480, 530, 120]
+  initialiseConsumptionStat() {
+
+    this.canvas = document.getElementById("consumptionStat");
+    this.ctx = this.canvas.getContext("2d");
+    this.consumptionStat = new Chart(this.ctx, {
+      type: 'pie',
+      data: {
+        labels: [1, 2, 3],
+        datasets: [{
+          label: "Category",
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          backgroundColor: [
+            '#E3E3E3',
+            '#51cbce',
+            '#ef8157',
+            '#6bd098',
+            '#032914',
+            '#8282e9',
+            '#a9c5b6'
+          ],
+          borderWidth: 0,
+          data: this.getDataViaType()
+        }]
+      },
+
+      options: {
+
+        legend: {
+          display: false
+        },
+
+        pieceLabel: {
+          render: 'percentage',
+          fontColor: ['white'],
+          precision: 2
+        },
+
+        tooltips: {
+          enabled: false
+        },
+
+        scales: {
+          yAxes: [{
+
+            ticks: {
+              display: false
+            },
+            gridLines: {
+              drawBorder: false,
+              zeroLineColor: "transparent",
+              color: 'rgba(255,255,255,0.05)'
+            }
+
+          }],
+
+          xAxes: [{
+            barPercentage: 1.6,
+            gridLines: {
+              drawBorder: false,
+              color: 'rgba(255,255,255,0.1)',
+              zeroLineColor: "transparent"
+            },
+            ticks: {
+              display: false,
+            }
           }]
         },
+      }
+    });
 
-        options: {
-
-          legend: {
-            display: false
-          },
-
-          pieceLabel: {
-            render: 'percentage',
-            fontColor: ['white'],
-            precision: 2
-          },
-
-          tooltips: {
-            enabled: false
-          },
-
-          scales: {
-            yAxes: [{
-
-              ticks: {
-                display: false
-              },
-              gridLines: {
-                drawBorder: false,
-                zeroLineColor: "transparent",
-                color: 'rgba(255,255,255,0.05)'
-              }
-
-            }],
-
-            xAxes: [{
-              barPercentage: 1.6,
-              gridLines: {
-                drawBorder: false,
-                color: 'rgba(255,255,255,0.1)',
-                zeroLineColor: "transparent"
-              },
-              ticks: {
-                display: false,
-              }
-            }]
-          },
-        }
-      });
-
-      var speedCanvas = document.getElementById("speedChart");
-
-      var dataFirst = {
-        data: [0, 19, 15, 20, 30, 40, 40, 50, 25, 30, 50, 70],
-        fill: false,
-        borderColor: '#fbc658',
-        backgroundColor: 'transparent',
-        pointBorderColor: '#fbc658',
-        pointRadius: 4,
-        pointHoverRadius: 4,
-        pointBorderWidth: 8,
-      };
-
-      var dataSecond = {
-        data: [0, 5, 10, 12, 20, 27, 30, 34, 42, 45, 55, 63],
-        fill: false,
-        borderColor: '#51CACF',
-        backgroundColor: 'transparent',
-        pointBorderColor: '#51CACF',
-        pointRadius: 4,
-        pointHoverRadius: 4,
-        pointBorderWidth: 8
-      };
-
-      var speedData = {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-        datasets: [dataFirst, dataSecond]
-      };
-
-      var chartOptions = {
-        legend: {
-          display: false,
-          position: 'top'
-        }
-      };
-
-      var lineChart = new Chart(speedCanvas, {
-        type: 'line',
-        hover: false,
-        data: speedData,
-        options: chartOptions
-      });
-    }
+  }
 }
