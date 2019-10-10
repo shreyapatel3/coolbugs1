@@ -1,0 +1,57 @@
+<div class="row">
+    <div class="col-lg-7 col-md-7 col-sm-12">
+        <div class="card ">
+            <div class="card-body">
+                <form (ngSubmit)="applyDateRange()" [formGroup]="dateRangeForm">
+                    <div class="row">
+
+                        <div class="col-md-3" style="padding-right: 10px;">
+                            <p style="margin: 0px; text-align: center; margin-top: 10px;">Transactions from: </p>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text"  ngxDaterangepickerMd id="dateRange" name="dateRange"
+                               
+                                formControlName="dateRange" [(ngModel)]="selected" class="form-control"
+                                style="margin-top: 15px;" />
+                        </div>
+                        <div class="col-md-4">
+                            <button name="applyDateRange" type="submit" class="form-control btn btn-primary">
+                                Apply</button>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div *ngFor="let transaction of transactions" class="col-md-12">
+        <div class="card ">
+            <div class="card-header ">
+                <p class="card-category">{{transaction.date}}</p>
+                <!--<p class="card-category">24 Hours performance</p>-->
+            </div>
+            <div class="card-body ">
+                <div class="row">
+                    <div class="col-lg-4 col-md-4 col-sm-6">
+                        <p style="font-size: 20px; margin-bottom: 0px; font-weight: bold;">{{transaction.currency}}
+                            {{transaction.amount}}</p>
+                    </div>
+                    <div class="col-lg-4 col-md-4 col-sm-6" style="text-align: center;">
+                        <p style="font-size: 20px; margin-bottom: 0px;">{{transaction.product}}</p>
+                    </div>
+                    <div class="col-lg-4 col-md-4 col-sm-6" style="text-align: right;">
+                        <p *ngIf="transaction.co2positive; else elseBlock"
+                            style="color: green; font-size: 20px; margin-bottom: 0px;  font-weight: bold;">
+                            +{{transaction.co2value}}</p>
+                        <ng-template #elseBlock>
+                            <p style="color: red; font-size: 20px; margin-bottom: 0px;  font-weight: bold;">
+                                -{{transaction.co2value}}</p>
+                        </ng-template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
